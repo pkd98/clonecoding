@@ -1,3 +1,29 @@
+const socket = io(); // socket io 이용 백엔드 서버와 연결
+
+const welcome = document.getElementById("welcome");
+const form = welcome.querySelector("form");
+
+function backendDone(msg) {
+    console.log(`The backend says: `, msg);
+}
+
+function handleRoomSubmit(event){
+    event.preventDefault();
+    const input = form.querySelector("input");
+    // socket io는 Object 전송 가능
+    // 첫 번째는 이벤트명, 두 번째는 front-end에서 전송하는 object(보내고 싶은 payload), 세 번째는 서버에서 호출하는 function
+    socket.emit(
+        "enter_room", // 이벤트 명
+        {payload: input.value},
+        backendDone // 백엔드에게 끝났다는 사실을 알리기 위한 fuction
+    );
+    input.value = ""
+}
+
+form.addEventListener("submit", handleRoomSubmit);
+
+
+/* 기존 websocket 이용 채팅 구현
 // home.pug내의 ul, form들을 받아옴
 const messageList = document.querySelector("ul");
 const nickForm = document.querySelector("#nick");
@@ -46,3 +72,4 @@ function handleNickSubmit(event){
 
 messageForm.addEventListener("submit", handleSubmit);
 nickForm.addEventListener("submit", handleNickSubmit);
+*/
