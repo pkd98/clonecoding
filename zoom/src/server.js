@@ -33,8 +33,13 @@ wsServer.on("connection", (socket) =>{ //socket io 이용한 연결
     socket.on("new_message", (msg, room, done) => { // 클라이언트의 새로운 메시지 반영하기
         socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
         done();
-    })
-    socket.on("nickname", (nickname) => (socket["nickname"] = nickname)); // 클라이언트 닉네임 설정
+    });
+    socket.on("nickname", (nickname, room, done) => { // 클라이언트 닉네임 설정
+        let beforNickname = socket.nickname;
+        socket["nickname"] = nickname;
+        socket.to(room).emit("nickname", `${beforNickname} changed to ${nickname}`);
+        done();
+    });
 });
 
 const handleListen = () => console.log('Listening on http://localhost:3000');

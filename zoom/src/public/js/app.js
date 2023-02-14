@@ -4,20 +4,21 @@ const socket = io(); // socket io 이용 백엔드 서버와 연결
 const welcome = document.getElementById("welcome");
 const form = welcome.querySelector("form");
 const room = document.getElementById("room");
+const msgForm = room.querySelector("#msg");
+const nameForm = room.querySelector("#name");
 
-room.hidden = true; // 최초 - 방 안보임
+// 처음 msgForm만 hidden 설정. 초기 방 입장, 닉네임 이벤트 리스너 설정
+msgForm.hidden = true;
 let roomName;
+nameForm.addEventListener("submit", handleNicknameSubmit);
 
-// 방 접속 시 welcome hidden 후 해당 room 보이기, 방 이름, 메시지 및 닉네임 이벤트 리스너 설정
+// 방 접속 시 welcome hidden 후 해당 room 보이기, 방 이름, 메시지 이벤트 리스너 설정
 function showRoom() {
     welcome.hidden = true;
-    room.hidden = false;
+    msgForm.hidden = false;
     const h3 = room.querySelector("h3");
     h3.innerText = `Room ${roomName}`;
-    const msgForm = room.querySelector("#msg");
-    const nameForm = room.querySelector("#name");
     msgForm.addEventListener("submit", handleMessageSubmit);
-    nameForm.addEventListener("submit", handleNicknameSubmit);
 }
 
 // 알림, 새로운 메시지 반영을 위한 함수
@@ -53,7 +54,10 @@ function handleMessageSubmit(event){
 function handleNicknameSubmit(event){
     event.preventDefault();
     const input = room.querySelector("#name input");
-    socket.emit("nickname", input.value);
+    const value = input.value;
+    socket.emit("nickname", input.value, roomName, () => {
+        addMessage(`Your nickname changed to ${value}`);
+    });
 }
 
 // 처음 채팅방 접속 이벤트 실행
@@ -69,7 +73,12 @@ socket.on("bye", (left) => {
     addMessage(`${left} left ㅠㅠ`);
 })
 
+// 다른 사람의 새로운 메시지 채팅창 반영
 socket.on("new_message", addMessage);
+
+// 타인의 닉네임 변경 알림 채팅창 반영
+socket.on("nickname", addMessage);
+
 
 /* 기존 websocket 이용 채팅 구현
 // home.pug내의 ul, form들을 받아옴
