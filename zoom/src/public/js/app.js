@@ -13,11 +13,11 @@ let roomName;
 nameForm.addEventListener("submit", handleNicknameSubmit);
 
 // 방 접속 시 welcome hidden 후 해당 room 보이기, 방 이름, 메시지 이벤트 리스너 설정
-function showRoom() {
+function showRoom(newCount) {
     welcome.hidden = true;
     msgForm.hidden = false;
     const h3 = room.querySelector("h3");
-    h3.innerText = `Room ${roomName}`;
+    h3.innerText = `Room ${roomName} (${newCount})`;
     msgForm.addEventListener("submit", handleMessageSubmit);
 }
 
@@ -63,21 +63,47 @@ function handleNicknameSubmit(event){
 // 처음 채팅방 접속 이벤트 실행
 form.addEventListener("submit", handleRoomSubmit);
 
+socket.on("enter", newCount => {
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${newCount})`;
+});
+
 // 채팅방 처음 입장 이벤트 발생시 해당 방 전체 인원에게 알림 전송
-socket.on("welcome", (user) => {
+socket.on("welcome", (user, newCount) => {
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${newCount})`;
     addMessage(`${user} joined!`);
-})
+});
 
 // 누군가 채팅방 퇴장 이벤트 발생시 해당 방 전체 인원에게 알림 전송
-socket.on("bye", (left) => {
+socket.on("bye", (left, newCount) => {
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${newCount})`;
     addMessage(`${left} left ㅠㅠ`);
-})
+});
 
 // 다른 사람의 새로운 메시지 채팅창 반영
 socket.on("new_message", addMessage);
 
 // 타인의 닉네임 변경 알림 채팅창 반영
 socket.on("nickname", addMessage);
+
+// welcome 초기 화면에서 방의 현황 갱신을 반영한다.
+socket.on("room_change", (rooms) => {
+    const roomList = welcome.querySelector("ul");
+    roomList.innerHTML ="";
+    if(rooms.length === 0){
+        return;
+    }
+    rooms.forEach(room => {
+        const li = document.createElement("li");
+        li.innerText = room;
+        roomList.append(li);
+    });
+});
+
+
+
 
 
 /* 기존 websocket 이용 채팅 구현
