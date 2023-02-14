@@ -35,9 +35,9 @@ wsServer.on("connection", (socket) =>{ //socket io 이용한 연결
         done();
     });
     socket.on("nickname", (nickname, room, done) => { // 클라이언트 닉네임 설정
-        let beforNickname = socket.nickname;
-        socket["nickname"] = nickname;
-        socket.to(room).emit("nickname", `${beforNickname} changed to ${nickname}`);
+        let beforNickname = socket.nickname; // 이전 닉네임
+        socket["nickname"] = nickname; // 새 닉네임 설정
+        socket.to(room).emit("nickname", `${beforNickname} changed to ${nickname}`); // 닉네임 변경 공지
         done();
     });
 });
