@@ -1,27 +1,75 @@
 const socket = io(); // socket io 이용 백엔드 서버와 연결
 
+// html(pug) 요소
 const welcome = document.getElementById("welcome");
 const form = welcome.querySelector("form");
+const room = document.getElementById("room");
 
-function backendDone(msg) {
-    console.log(`The backend says: `, msg);
+room.hidden = true; // 최초 - 방 안보임
+let roomName;
+
+// 방 접속 시 welcome hidden 후 해당 room 보이기, 방 이름, 메시지 및 닉네임 이벤트 리스너 설정
+function showRoom() {
+    welcome.hidden = true;
+    room.hidden = false;
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName}`;
+    const msgForm = room.querySelector("#msg");
+    const nameForm = room.querySelector("#name");
+    msgForm.addEventListener("submit", handleMessageSubmit);
+    nameForm.addEventListener("submit", handleNicknameSubmit);
 }
 
+// 알림, 새로운 메시지 반영을 위한 함수
+function addMessage(message){
+    const ul = room.querySelector("ul");
+    const li = document.createElement("li");
+    li.innerText = message;
+    ul.appendChild(li);
+}
+
+// 처음 채팅방 접속을 위한 함수
 function handleRoomSubmit(event){
     event.preventDefault();
     const input = form.querySelector("input");
-    // socket io는 Object 전송 가능
-    // 첫 번째는 이벤트명, 두 번째는 front-end에서 전송하는 object(보내고 싶은 payload), 세 번째는 서버에서 호출하는 function
-    socket.emit(
-        "enter_room", // 이벤트 명
-        {payload: input.value},
-        backendDone // 백엔드에게 끝났다는 사실을 알리기 위한 fuction
-    );
+    // socket io는 Object 전송 가능, 첫 번째는 이벤트명, 두 번째는 front-end에서 전송하는 object(보내고 싶은 payload), 세 번째는 서버에서 호출하는 function
+    socket.emit("enter_room", input.value, showRoom); // 백엔드 서버로의 에밋
+    roomName = input.value; // 방 이름 셋팅
     input.value = ""
 }
 
+// 나의 메시지 전송 이벤트 처리 함수
+function handleMessageSubmit(event){
+    event.preventDefault();
+    const input = room.querySelector("#msg input");
+    const value = input.value;
+    socket.emit("new_message", input.value, roomName, () => {
+        addMessage(`You: ${value}`);
+    });
+    input.value = "";
+}
+
+// 닉네임 이벤트 처리 함수
+function handleNicknameSubmit(event){
+    event.preventDefault();
+    const input = room.querySelector("#name input");
+    socket.emit("nickname", input.value);
+}
+
+// 처음 채팅방 접속 이벤트 실행
 form.addEventListener("submit", handleRoomSubmit);
 
+// 채팅방 처음 입장 이벤트 발생시 해당 방 전체 인원에게 알림 전송
+socket.on("welcome", (user) => {
+    addMessage(`${user} joined!`);
+})
+
+// 누군가 채팅방 퇴장 이벤트 발생시 해당 방 전체 인원에게 알림 전송
+socket.on("bye", (left) => {
+    addMessage(`${left} left ㅠㅠ`);
+})
+
+socket.on("new_message", addMessage);
 
 /* 기존 websocket 이용 채팅 구현
 // home.pug내의 ul, form들을 받아옴
