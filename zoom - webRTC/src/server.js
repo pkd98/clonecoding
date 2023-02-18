@@ -19,5 +19,22 @@ app.get("/*", (req,res) => res.redirect("/")); // 홈페이지 내 어드 페이
 const httpServer = http.createServer(app);// app은 requestlistener 경로 - express application으로부터 서버 생성
 const wsServer = SocketIO(httpServer);
 
+wsServer.on("connection", (socket) => {
+    socket.on("join_room", (roomName, done) => { // 방 입장
+        socket.join(roomName);
+        socket.to(roomName).emit("welcome");
+    });
+    socket.on("offer", (offer, roomName) => { // peerA로부터 받은 offer을 peerB로 전달
+        socket.to(roomName).emit("offer", offer);
+    });
+    socket.on("answer", (answer, roomName) => { //peerB의 answer을 다시 peerA로 전달
+        socket.to(roomName).emit("answer", answer);
+    });
+    socket.on("ice", (ice, roomName) => { //icecandidate를 전달
+        socket.to(roomName).emit("ice", ice);
+    });
+});
+
+
 const handleListen = () => console.log('Listening on http://localhost:3000');
 httpServer.listen(3000, handleListen);
