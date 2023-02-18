@@ -106,6 +106,13 @@ function handleMuteClick() {
 // 카메라 변경을 위한 select 이벤트 핸들러
 async function handleCameraChange() {
     await getMedia(camerasSelect.value); // 다시 getMedia를 호출해 카메라를 선택한 카메라로 재시작 한다.
+    if (myPeerConnection) {
+        const videoTrack = myStream.getVideoTracks()[0];
+        const videoSender = myPeerConnection
+            .getSenders()
+            .find((sender) => sender.track.kind === "video");
+        videoSender.replaceTrack(videoTrack); // 카메라 변경시 상대방에도 변경되도록 replaceTrack()
+    }
 }
 
 // 음소거, 카메라 버튼, 카메라 선택 이벤트 리스너 연결
@@ -171,7 +178,21 @@ socket.on("ice", (ice) => {
 
 // RTC code
 function makeConnection() {
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        // google이 제공하는 무료 stun server이다. (장치에 공용ip주소를 알려주는 서버)
+        // -> 다른 네트워크에 있는 장치들이 서로를 찾을 수 있게 된다.
+        iceServers: [
+            {
+                urls:[
+                "stun:stun.l.google.com:19302",
+                "stun:stun1.l.google.com:19302",
+                "stun:stun2.l.google.com:19302",
+                "stun:stun3.l.google.com:19302",
+                "stun:stun4.l.google.com:19302",
+                ],
+            },
+        ],
+    });
     myPeerConnection.addEventListener("icecandidate", handleIce);
     myPeerConnection.addEventListener("addstream", handleAddStream);
     myStream
