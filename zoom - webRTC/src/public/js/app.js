@@ -14,6 +14,7 @@ let muted = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
+let myDataChannel;
 
 // 사용자의 장치 목록 받아오기
 async function getCameras() {
@@ -107,8 +108,8 @@ function handleMuteClick() {
 async function handleCameraChange() {
     await getMedia(camerasSelect.value); // 다시 getMedia를 호출해 카메라를 선택한 카메라로 재시작 한다.
     if (myPeerConnection) {
-        const videoTrack = myStream.getVideoTracks()[0];
-        const videoSender = myPeerConnection
+        const videoTrack = myStream.getVideoTracks()[0]; // 새롭게 변화될 videoTrack을 다시 받아옴
+        const videoSender = myPeerConnection // 변화될 sender를 찾음
             .getSenders()
             .find((sender) => sender.track.kind === "video");
         videoSender.replaceTrack(videoTrack); // 카메라 변경시 상대방에도 변경되도록 replaceTrack()
@@ -147,6 +148,10 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 // ---------------- Socket Code -------------------------------------
 // 방을 미리 들어와 있던 사람이 수신 (Peer A)
 socket.on("welcome", async () => {
+    myDataChannel = myPeerConnection.createDataChannel("chat"); //DataChannel 생성
+    myDataChannel.addEventListener("message", event => console.log(event.data));
+    console.log("made data channel");
+
     const offer = await myPeerConnection.createOffer(); // offer을 생성하게 된다.
     myPeerConnection.setLocalDescription(offer);
     console.log("sent the offer");
@@ -155,6 +160,11 @@ socket.on("welcome", async () => {
 
 // 방을 들어가려고 하는 사람이 수신 (Peer B)
 socket.on("offer", async (offer) => {
+    myPeerConnection.addEventListener("datachannel", event => {
+        myDataChannel = event.channel;
+        myDataChannel.addEventListener("message", event => console.log(event.data))
+    });
+
     console.log("received the offer");
     myPeerConnection.setRemoteDescription(offer);
     const answer = await myPeerConnection.createAnswer(); //answer을 생성
